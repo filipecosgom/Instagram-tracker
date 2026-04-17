@@ -1,0 +1,32 @@
+# Generated files
+dashboard.html
+*.pyc
+__pycache__/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Snapshots (local data)
+snapshots/input/
+snapshots/processed/
+snapshots/history.json
+snapshots/master_followers.json
+
+# Personal data & test files
+listas totais/
+outros users/
+teste/
+teste leitura.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Python
+src/__pycache__/
+.mypy_cache/
+
