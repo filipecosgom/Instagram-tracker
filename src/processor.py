@@ -33,14 +33,14 @@ def process_snapshots() -> list:
         date = get_snapshot_date(zip_path)
 
         if date in existing_dates:
-            print(f"  ↩  {zip_path.name} already processed ({date}), skipping")
+            print(f"  [skip] {zip_path.name} already processed ({date})")
             continue
 
-        print(f"  📦 Processing {zip_path.name} → {date}")
+        print(f"  [processing] {zip_path.name} -> {date}")
         current_snap = extract_usernames(zip_path)
 
         if not current_snap:
-            print("  ⚠  No usernames extracted, skipping")
+            print("  [warn] No usernames extracted, skipping")
             continue
 
         # Get active followers from previous snapshots (status != "lost")
@@ -86,7 +86,7 @@ def process_snapshots() -> list:
 
         dest = PROCESSED_DIR / zip_path.name
         zip_path.rename(dest)
-        print(f"     ✓ Moved to snapshots/processed/")
+        print(f"     [done] Moved to snapshots/processed/")
 
     if new_count == 0:
         print("  No new snapshots to process.")
@@ -94,7 +94,7 @@ def process_snapshots() -> list:
         save_history(history)
         save_followers_dict(followers_dict)
         active_count = len([u for u, i in followers_dict.items() if i["status"] == "active"])
-        print(f"\n  ✓ History updated ({len(history)} snapshots)")
-        print(f"  ✓ Master followers updated ({active_count} active)")
+        print(f"\n  [done] History updated ({len(history)} snapshots)")
+        print(f"  [done] Master followers updated ({active_count} active)")
 
     return history

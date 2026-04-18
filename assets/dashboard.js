@@ -8,7 +8,11 @@ function fmtDate(s) {
 
 function renderUserList(users, cls) {
   if (!users.length) return `<div class="empty">None this period</div>`;
-  return `<ul class="ulist">${users.map(u=>`<li><a href="https://instagram.com/${u}" target="_blank" rel="noopener noreferrer">@${u}</a></li>`).join('')}</ul>`;
+  return `<ul class="ulist">${users.map(u=>{
+    const follower = DATA.followers && DATA.followers[u];
+    const img = follower && follower.profileImage ? `<img src="${follower.profileImage}" alt="${u}" class="uimg">` : '';
+    return `<li>${img}<a href="https://instagram.com/${u}" target="_blank" rel="noopener noreferrer">@${u}</a></li>`;
+  }).join('')}</ul>`;
 }
 
 function updateDetail(idx) {
@@ -24,7 +28,11 @@ function render() {
   document.getElementById('footer-ts').textContent =
     `Generated ${now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}`;
 
-  if (!DATA || DATA.length === 0) {
+  // Extract snapshots from data object
+  const snapshots = DATA.snapshots || DATA;
+  const totalActive = DATA.totalActive || (snapshots.length > 0 ? snapshots[snapshots.length - 1].total : 0);
+
+  if (!snapshots || snapshots.length === 0) {
     document.getElementById('app').innerHTML = `
       <div class="no-data">
         <div class="nd-icon">📂</div>
@@ -35,12 +43,12 @@ function render() {
     return;
   }
 
-  const latest = DATA[DATA.length - 1];
-  const prev   = DATA.length > 1 ? DATA[DATA.length - 2] : null;
+  const latest = snapshots[snapshots.length - 1];
+  const prev   = snapshots.length > 1 ? snapshots[snapshots.length - 2] : null;
   const net    = latest.gained.length - latest.lost.length;
 
   document.getElementById('header-updated').textContent =
-    `${DATA.length} snapshot${DATA.length !== 1 ? 's' : ''} · last: ${fmtDate(latest.date)}`;
+    `${snapshots.length} snapshot${snapshots.length !== 1 ? 's' : ''} · last: ${fmtDate(latest.date)}`;
 
   // ── Stats ──
   const statsHTML = `
@@ -48,8 +56,8 @@ function render() {
     <div class="stats">
       <div class="stat s-total">
         <div class="stat-lbl">Total followers</div>
-        <div class="stat-val">${latest.total.toLocaleString()}</div>
-        <div class="stat-sub">${prev ? `${prev.total.toLocaleString()} on ${fmtDate(prev.date)}` : 'First snapshot'}</div>
+        <div class="stat-val">${totalActive.toLocaleString()}</div>
+        <div class="stat-sub">since tracking started</div>
       </div>
       <div class="stat s-gained">
         <div class="stat-lbl">Gained</div>
@@ -69,7 +77,7 @@ function render() {
     </div>`;
 
   // ── Chart ──
-  const chartHTML = DATA.length > 1 ? `
+  const chartHTML = snapshots.length > 1 ? `
     <div class="chart-section">
       <div class="sl">Growth over time</div>
       <div class="chart-box">
@@ -78,10 +86,10 @@ function render() {
     </div>` : '';
 
   // ── Snapshot selector ──
-  const snapOptions = DATA.map((s,i) =>
-    `<option value="${i}"${i===DATA.length-1?' selected':''}>${fmtDate(s.date)} — ${s.total} followers</option>`
+  const snapOptions = snapshots.map((s,i) =>
+    `<option value="${i}"${i===snapshots.length-1?' selected':''}>${fmtDate(s.date)} — ${s.total} followers</option>`
   ).join('');
-  const selectorHTML = DATA.length > 1 ? `
+  const selectorHTML = snapshots.length > 1 ? `
     <div class="snap-bar">
       <label>View snapshot</label>
       <select id="snap-sel">${snapOptions}</select>
@@ -108,8 +116,8 @@ function render() {
     </div>`;
 
   // ── History table ──
-  const histRows = [...DATA].reverse().map((s, revIdx) => {
-    const isFirst = revIdx === DATA.length - 1;
+  const histRows = [...snapshots].reverse().map((s, revIdx) => {
+    const isFirst = revIdx === snapshots.length - 1;
     const g = s.gained.length, l = s.lost.length, n = g - l;
     const gPill = g ? `<span class="pill g">+${g}</span>` : '—';
     const lPill = l ? `<span class="pill l">-${l}</span>` : '—';
@@ -139,14 +147,14 @@ function render() {
     statsHTML + chartHTML + selectorHTML + tablesHTML + histHTML;
 
   // ── Chart.js ──
-  if (DATA.length > 1) {
+  if (snapshots.length > 1) {
     const ctx = document.getElementById('chart').getContext('2d');
     new Chart(ctx, {
       type: 'line',
       data: {
-        labels: DATA.map(s => fmtDate(s.date)),
+        labels: snapshots.map(s => fmtDate(s.date)),
         datasets: [{
-          data: DATA.map(s => s.total),
+          data: snapshots.map(s => s.total),
           borderColor: '#e8a020',
           backgroundColor: 'rgba(232,160,32,0.05)',
           borderWidth: 2,
@@ -184,7 +192,7 @@ function render() {
           y: {
             grid: { color: '#161616' },
             ticks: { color: '#444', font: { family: "'Barlow'", size: 11 } },
-            suggestedMin: Math.min(...DATA.map(s => s.total)) - 15,
+            suggestedMin: Math.min(...snapshots.map(s => s.total)) - 15,
           }
         }
       }
@@ -192,7 +200,7 @@ function render() {
   }
 
   // ── Selector logic ──
-  if (DATA.length > 1) {
+  if (snapshots.length > 1) {
     document.getElementById('snap-sel').addEventListener('change', function() {
       updateDetail(parseInt(this.value));
     });
