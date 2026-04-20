@@ -6,21 +6,30 @@ function fmtDate(s) {
   return `${parseInt(d)} ${MONTHS[parseInt(m)-1]} ${y}`;
 }
 
-function renderUserList(users, cls) {
+function renderUserList(users, cls, showTooltip = false) {
   if (!users.length) return `<div class="empty">None this period</div>`;
-  return `<ul class="ulist">${users.map(u=>{
+  
+  return `<ul class="ulist">${users.map(u => {
     const follower = DATA.followers && DATA.followers[u];
-    const img = follower && follower.profileImage ? `<img src="${follower.profileImage}" alt="${u}" class="uimg">` : '';
-    return `<li>${img}<a href="https://instagram.com/${u}" target="_blank" rel="noopener noreferrer">@${u}</a></li>`;
+    let tooltipAttr = '';
+    
+    if (showTooltip && follower) {
+      const firstSeen = follower.first_seen || '—';
+      const lastSeen = follower.last_seen || '—';
+      const tooltipText = `First seen: ${fmtDate(firstSeen)}\\nLast seen: ${fmtDate(lastSeen)}`;
+      tooltipAttr = ` title="${tooltipText}"`;
+    }
+    
+    return `<li><a href="https://instagram.com/${u}" target="_blank" rel="noopener noreferrer"${tooltipAttr}>@${u}</a></li>`;
   }).join('')}</ul>`;
 }
 
 function updateDetail(idx) {
-  const s = DATA[idx];
+  const s = DATA.snapshots[idx];  // FIX: was DATA[idx]
   document.getElementById('d-gained-count').textContent = s.gained.length;
   document.getElementById('d-lost-count').textContent   = s.lost.length;
   document.getElementById('d-gained-body').innerHTML = renderUserList(s.gained, 'gain');
-  document.getElementById('d-lost-body').innerHTML   = renderUserList(s.lost,   'loss');
+  document.getElementById('d-lost-body').innerHTML   = renderUserList(s.lost, 'loss');
 }
 
 function render() {
@@ -28,9 +37,9 @@ function render() {
   document.getElementById('footer-ts').textContent =
     `Generated ${now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}`;
 
-  // Extract snapshots from data object
   const snapshots = DATA.snapshots || DATA;
   const totalActive = DATA.totalActive || (snapshots.length > 0 ? snapshots[snapshots.length - 1].total : 0);
+  const followersDict = DATA.followers || {};
 
   if (!snapshots || snapshots.length === 0) {
     document.getElementById('app').innerHTML = `
@@ -45,19 +54,28 @@ function render() {
 
   const latest = snapshots[snapshots.length - 1];
   const prev   = snapshots.length > 1 ? snapshots[snapshots.length - 2] : null;
-  const net    = latest.gained.length - latest.lost.length;
+  
+  // Calculate "this week" stats (latest vs previous snapshot)
+  const weekNet = latest.gained.length - latest.lost.length;
+  
+  // Calculate "since tracking started" stats
+  const activeFollowers = Object.keys(followersDict).filter(u => followersDict[u].status === 'active');
+  const lostFollowers = Object.keys(followersDict).filter(u => followersDict[u].status === 'lost');
+  const totalGainedEver = activeFollowers.length + lostFollowers.length;
+  const totalLostEver = lostFollowers.length;
+  const totalNetEver = activeFollowers.length;
 
   document.getElementById('header-updated').textContent =
     `${snapshots.length} snapshot${snapshots.length !== 1 ? 's' : ''} · last: ${fmtDate(latest.date)}`;
 
-  // ── Stats ──
-  const statsHTML = `
+  // ── Stats: This Week ──
+  const statsWeekHTML = `
     <div class="sl">This week</div>
     <div class="stats">
       <div class="stat s-total">
         <div class="stat-lbl">Total followers</div>
-        <div class="stat-val">${totalActive.toLocaleString()}</div>
-        <div class="stat-sub">since tracking started</div>
+        <div class="stat-val">${latest.total.toLocaleString()}</div>
+        <div class="stat-sub">${prev ? `${prev.total.toLocaleString()} on ${fmtDate(prev.date)}` : 'First snapshot'}</div>
       </div>
       <div class="stat s-gained">
         <div class="stat-lbl">Gained</div>
@@ -71,8 +89,34 @@ function render() {
       </div>
       <div class="stat s-net">
         <div class="stat-lbl">Net change</div>
-        <div class="stat-val">${net > 0 ? '+' : ''}${net}</div>
+        <div class="stat-val">${weekNet > 0 ? '+' : ''}${weekNet}</div>
         <div class="stat-sub">${prev ? `since ${fmtDate(prev.date)}` : 'baseline'}</div>
+      </div>
+    </div>`;
+
+  // ── Stats: Since Tracking Started ──
+  const statsAllTimeHTML = `
+    <div class="sl">Since tracking started</div>
+    <div class="stats">
+      <div class="stat s-total">
+        <div class="stat-lbl">Active followers</div>
+        <div class="stat-val">${activeFollowers.length.toLocaleString()}</div>
+        <div class="stat-sub">currently following</div>
+      </div>
+      <div class="stat s-gained">
+        <div class="stat-lbl">Total gained</div>
+        <div class="stat-val">+${totalGainedEver}</div>
+        <div class="stat-sub">all time</div>
+      </div>
+      <div class="stat s-lost">
+        <div class="stat-lbl">Total lost</div>
+        <div class="stat-val">-${totalLostEver}</div>
+        <div class="stat-sub">all time</div>
+      </div>
+      <div class="stat s-net">
+        <div class="stat-lbl">Net growth</div>
+        <div class="stat-val">${totalNetEver > 0 ? '+' : ''}${totalNetEver}</div>
+        <div class="stat-sub">total active</div>
       </div>
     </div>`;
 
@@ -95,7 +139,7 @@ function render() {
       <select id="snap-sel">${snapOptions}</select>
     </div>` : '';
 
-  // ── Detail tables ──
+  // ── Detail tables (gained/lost for selected snapshot) ──
   const tablesHTML = `
     <div class="sl">Snapshot detail</div>
     <div class="tables">
@@ -112,6 +156,15 @@ function render() {
           <span class="tcard-count" id="d-lost-count">${latest.lost.length}</span>
         </div>
         <div id="d-lost-body">${renderUserList(latest.lost)}</div>
+      </div>
+    </div>`;
+
+  // ── Active followers list ──
+  const activeFollowersHTML = `
+    <div class="followers-section">
+      <div class="sl">All active followers (${activeFollowers.length})</div>
+      <div class="tcard">
+        <div class="tcard-body">${renderUserList(activeFollowers, 'active', true)}</div>
       </div>
     </div>`;
 
@@ -144,7 +197,7 @@ function render() {
     </div>`;
 
   document.getElementById('app').innerHTML =
-    statsHTML + chartHTML + selectorHTML + tablesHTML + histHTML;
+    statsWeekHTML + statsAllTimeHTML + chartHTML + selectorHTML + tablesHTML + activeFollowersHTML + histHTML;
 
   // ── Chart.js ──
   if (snapshots.length > 1) {

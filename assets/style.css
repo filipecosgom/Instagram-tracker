@@ -240,6 +240,10 @@ header {
 .tcard.tc-gain .tcard-count { color: var(--gain); }
 .tcard.tc-loss .tcard-count { color: var(--loss); }
 
+.tcard-body {
+  /* For active followers section */
+}
+
 .ulist {
   list-style: none;
   max-height: 300px;
@@ -266,15 +270,6 @@ header {
 .ulist li:last-child { border-bottom: none; }
 .ulist li:hover { background: var(--bg3); }
 
-.ulist .uimg {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-}
-
 .ulist li::before {
   content: '@';
   font-size: 0.72rem;
@@ -296,6 +291,23 @@ header {
   color: var(--muted);
   font-size: 0.82rem;
   font-style: italic;
+}
+
+/* ── Active Followers Section ── */
+.followers-section {
+  margin-bottom: 2.5rem;
+}
+
+.followers-section .ulist {
+  max-height: 400px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.followers-section .ulist li {
+  border-right: 1px solid var(--border);
+}
+.followers-section .ulist li:nth-child(3n) {
+  border-right: none;
 }
 
 /* ── History table ── */
@@ -395,12 +407,14 @@ header      { animation: fadeUp 0.35s ease both; }
 .stats      { animation: fadeUp 0.35s 0.05s ease both; }
 .chart-section { animation: fadeUp 0.35s 0.1s ease both; }
 .tables     { animation: fadeUp 0.35s 0.15s ease both; }
+.followers-section { animation: fadeUp 0.35s 0.18s ease both; }
 .hist-section { animation: fadeUp 0.35s 0.2s ease both; }
 
 /* ── Responsive ── */
 @media (max-width: 780px) {
   .stats  { grid-template-columns: 1fr 1fr; }
   .tables { grid-template-columns: 1fr; }
+  .followers-section .ulist { grid-template-columns: 1fr 1fr; }
   .logo   { font-size: 2.2rem; }
   header  { flex-direction: column; align-items: flex-start; }
   .header-right { text-align: left; }

@@ -1,9 +1,8 @@
 """Manage data persistence (load/save operations)."""
 
 import json
-from pathlib import Path
 
-from .config import ENCODING, HISTORY_FILE, MASTER_FILE, FOLLOWERS_FILE
+from .config import ENCODING, HISTORY_FILE, FOLLOWERS_FILE
 
 
 def load_history() -> list:
@@ -45,24 +44,4 @@ def save_followers_dict(followers: dict) -> None:
     FOLLOWERS_FILE.parent.mkdir(parents=True, exist_ok=True)
     FOLLOWERS_FILE.write_text(
         json.dumps(followers, indent=2, ensure_ascii=False), encoding=ENCODING
-    )
-
-
-def load_master() -> set:
-    """Load master follower list.
-
-    Returns:
-        Set of usernames or empty set if file doesn't exist.
-    """
-    if MASTER_FILE.exists():
-        data = json.loads(MASTER_FILE.read_text(encoding=ENCODING))
-        return set(data) if isinstance(data, list) else set()
-    return set()
-
-
-def save_master(followers: set) -> None:
-    """Save master follower list to JSON file."""
-    MASTER_FILE.parent.mkdir(parents=True, exist_ok=True)
-    MASTER_FILE.write_text(
-        json.dumps(sorted(followers), indent=2, ensure_ascii=False), encoding=ENCODING
     )
