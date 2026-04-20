@@ -74,18 +74,18 @@ def extract_usernames(zip_path: Path) -> set:
         ]
 
         if not follower_files:
-            print(f"  ⚠  No followers JSON found in {zip_path.name}")
+            print(f"  [warn] No followers JSON found in {zip_path.name}")
             print(f"     Files in ZIP: {names}")
             return usernames
 
         for fname in follower_files:
-            print(f"     📦 Reading {fname}")
+            print(f"     [reading] {fname}")
 
             try:
                 with zf.open(fname) as f:
                     data = json.load(f)
             except Exception as e:
-                print(f"  ⚠  Failed to read {fname} in {zip_path.name}: {e}")
+                print(f"  [warn] Failed to read {fname} in {zip_path.name}: {e}")
                 continue
 
             entries = []
@@ -97,7 +97,7 @@ def extract_usernames(zip_path: Path) -> set:
                         entries = data[key]
                         break
             else:
-                print(f"  ⚠  Unexpected JSON type in {fname}")
+                print(f"  [warn] Unexpected JSON type in {fname}")
                 continue
 
             extracted = 0
@@ -112,7 +112,7 @@ def extract_usernames(zip_path: Path) -> set:
                         usernames.add(item["value"])
                         extracted += 1
 
-            print(f"  ✅ Extracted {extracted} usernames from {fname}")
+            print(f"  [done] Extracted {extracted} usernames from {fname}")
 
     return usernames
 
@@ -157,14 +157,14 @@ def process_snapshots() -> list:
         date = get_snapshot_date(zip_path)
 
         if date in existing_dates:
-            print(f"  ↩  {zip_path.name} already processed ({date}), skipping")
+            print(f"  [skip] {zip_path.name} already processed ({date}), skipping")
             continue
 
-        print(f"  📦 Processing {zip_path.name} → {date}")
+        print(f"  [processing] {zip_path.name} → {date}")
         current_snap = extract_usernames(zip_path)
 
         if not current_snap:
-            print("  ⚠  No usernames extracted, skipping")
+            print("  [warn] No usernames extracted, skipping")
             continue
 
         # existing_snap = usernames “activos” no dicionário (status != "lost")
@@ -210,16 +210,16 @@ def process_snapshots() -> list:
 
         dest = PROCESSED_DIR / zip_path.name
         zip_path.rename(dest)
-        print(f"     ✓ Moved to snapshots/processed/")
+        print(f"     [done] Moved to snapshots/processed/")
 
     if new_count == 0:
         print("  No new snapshots to process.")
     else:
         save_history(history)
         save_followers_dict(followers_dict)
-        print(f"\n  ✓ History updated ({len(history)} snapshots)")
+        print(f"\n  [done] History updated ({len(history)} snapshots)")
         print(
-            f"  ✓ Master followers updated ({len([u for u, i in followers_dict.items() if i['status'] == 'active'])} active)"
+            f"  [done] Master followers updated ({len([u for u, i in followers_dict.items() if i['status'] == 'active'])} active)"
         )
 
     return history
@@ -235,7 +235,17 @@ def generate_html(history: list, followers_dict: dict) -> str:
         raise FileNotFoundError(f"Template not found: {template_path}")
 
     template = template_path.read_text(encoding="utf-8")
-    data_json = json.dumps(history, indent=2, ensure_ascii=False)
+
+    # Calculate active followers count
+    total_active = len([u for u, i in followers_dict.items() if i.get("status", "active") == "active"])
+
+    # Create data object with snapshots, totalActive, and followers dict
+    data = {
+        "snapshots": history,
+        "totalActive": total_active,
+        "followers": followers_dict
+    }
+    data_json = json.dumps(data, indent=2, ensure_ascii=False)
     html = template.replace("__DATA_PLACEHOLDER__", data_json)
     return html
 
@@ -247,7 +257,7 @@ def main():
     # 3
     html = generate_html(history, followers_dict)
     OUTPUT_HTML.write_text(html, encoding="utf-8")
-    print(f"  ✓ Saved → {OUTPUT_HTML}")
+    print(f"  [done] Dashboard saved -> {OUTPUT_HTML}")
     webbrowser.open(OUTPUT_HTML.as_uri())
 
 
