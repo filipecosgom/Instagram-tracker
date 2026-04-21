@@ -58,7 +58,25 @@ Ao fazer hover sobre qualquer username na lista de seguidores activos, aparece t
 
 Dados vêm do campo `first_seen` e `last_seen` em `master_followers.json`.
 
-### 4. Remoção de suporte a profile images
+### 4. Busca em tempo real de followers
+**Ficheiros:** `assets/dashboard.js`, `assets/style.css`
+
+Nova barra de busca no topo da secção "All active followers".
+
+**Como funciona:**
+- Escreve qualquer parte do username no campo de busca
+- A lista filtra em tempo real enquanto escreves
+- Contador mostra "X of Y" (resultados visíveis vs total)
+- Quando não há resultados, o contador fica vermelho
+- Não há delay — a filtragem é instantânea
+
+**Implementação:**
+- Event listener no input field
+- Esconde/mostra list items via `display: none`
+- Case-insensitive search
+- Funciona com usernames parciais (ex: "photo" encontra "fgphoto_")
+
+### 5. Remoção de suporte a profile images
 **Ficheiro:** `assets/dashboard.js`, `assets/style.css`
 
 A Meta não exporta imagens de perfil nos ZIPs, portanto o código que tentava renderizar avatares foi removido:
@@ -76,8 +94,8 @@ src/
   storage.py       ← load_master/save_master removidos
 
 assets/
-  dashboard.js     ← bug fix + dual stats + followers section + tooltips
-  style.css        ← followers-section styles + grid 3 colunas
+  dashboard.js     ← bug fix + dual stats + followers section + tooltips + search
+  style.css        ← followers-section styles + grid 3 colunas + search bar
 ```
 
 ---

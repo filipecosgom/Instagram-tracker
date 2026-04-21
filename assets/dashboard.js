@@ -163,8 +163,17 @@ function render() {
   const activeFollowersHTML = `
     <div class="followers-section">
       <div class="sl">All active followers (${activeFollowers.length})</div>
+      <div class="search-bar">
+        <input 
+          type="text" 
+          id="follower-search" 
+          placeholder="Search followers..."
+          autocomplete="off"
+        >
+        <span class="search-count" id="search-count">${activeFollowers.length} of ${activeFollowers.length}</span>
+      </div>
       <div class="tcard">
-        <div class="tcard-body">${renderUserList(activeFollowers, 'active', true)}</div>
+        <div class="tcard-body" id="active-followers-list">${renderUserList(activeFollowers, 'active', true)}</div>
       </div>
     </div>`;
 
@@ -256,6 +265,38 @@ function render() {
   if (snapshots.length > 1) {
     document.getElementById('snap-sel').addEventListener('change', function() {
       updateDetail(parseInt(this.value));
+    });
+  }
+
+  // ── Search filter logic ──
+  const searchInput = document.getElementById('follower-search');
+  const searchCount = document.getElementById('search-count');
+  const followersList = document.getElementById('active-followers-list');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      const items = followersList.querySelectorAll('li');
+      let visibleCount = 0;
+      
+      items.forEach(item => {
+        const username = item.textContent.toLowerCase();
+        if (username.includes(query)) {
+          item.style.display = 'flex';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      searchCount.textContent = `${visibleCount} of ${activeFollowers.length}`;
+      
+      // Visual feedback when no results
+      if (visibleCount === 0 && query.length > 0) {
+        searchCount.style.color = 'var(--loss)';
+      } else {
+        searchCount.style.color = 'var(--muted)';
+      }
     });
   }
 }

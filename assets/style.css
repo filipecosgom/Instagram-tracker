@@ -298,6 +298,46 @@ header {
   margin-bottom: 2.5rem;
 }
 
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.search-bar input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-bar input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.search-bar input:focus {
+  border-color: var(--accent);
+}
+
+.search-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
 .followers-section .ulist {
   max-height: 400px;
   grid-template-columns: repeat(3, 1fr);
